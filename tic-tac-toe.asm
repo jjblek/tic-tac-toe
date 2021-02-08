@@ -11,7 +11,7 @@ section 	.data
 ; ###############################################
 ; Variable Definitions
 ; ###############################################
-; constants
+; constants for system calls
 SYS_read	equ	0x0
 SYS_stdin	equ	0x0
 SYS_write	equ	0x1
@@ -59,9 +59,9 @@ endPromptSize	equ	$-drawPrompt
 ; ############ 
 section		.bss
 
-row resb 1 ; reserve byte for row input
+row resb 1 ; reserve a byte for row input
 
-col resb 1 ; reserve byte for column input
+col resb 1 ; reserve a byte for column input
 
 ; ###############################################
 ; Variable Declarations
@@ -354,7 +354,7 @@ push rcx	; save counter
 ; ### Check win conditions
 ; ###############################################
 
-; starting at the tail of the row from the current placement
+; starting at the tail of the current row
 mov al, byte [row]		; accumulator = row
 mov bl, 0x3			; base = 3
 mul bl				; accumulator*base = row tail + 1
@@ -363,9 +363,9 @@ checkRows:			; tttArray+rax-1 = row tail
 cmp r8b, byte [tttArray+rax-1]  ; if current placement != row position
 jne exitRows			; exit row win check				  								
 dec rcx				; else decrement counter
-jz win				; if counter = 0; win condition found
-dec al				; decrement to traverse from row tail to head
-jmp checkRows			; loop: check next row position
+jz win				; if counter = 0; win condition found, exit loop
+dec al				; decrement to traverse row tail to head
+jmp checkRows			; restart: check next row position
 exitRows:		
 
 ; starting at the head of the column from the current placement
@@ -375,28 +375,28 @@ checkColumns:
 cmp r8b, byte [tttArray+rax-1]  ; if current placement != column position
 jne exitColumns			; exit column win check
 dec rcx				; else decrement counter
-jz win				; if counter = 0; win condition found			
+jz win				; if counter = 0; win condition found, exit loop			
 add al, 0x3			; add 3 to traverse from column head to tail
-jmp checkColumns		; loop: check next column position
-exitColumns:
+jmp checkColumns		; restart: check next column position
+exitColumns:			
 
-; Diagonal 1: 0, 4, 8 
+; Diagonal 1: [0, 4, 8] 
 mov rcx, 0xC			; counter = 12
 checkDiag1:
 cmp rcx, 0x0			; if counter = 0
-je win				; win condition found
+je win				; win condition found, exit loop
 sub rcx, 0x4			; subtract 4 to traverse from tail to head 
 cmp r8b, byte [tttArray+rcx]	; if current placement = diagonal position
-je checkDiag1			; check next diagonal position
+je checkDiag1			; restart: check next diagonal position
 
-; Diagonal 2: 2, 4, 6
+; Diagonal 2: [2, 4, 6]
 mov rcx, 0x8			; counter = 8
 checkDiag2:
 cmp rcx, 0x2			; if counter = 2
-je win				; win condition found
+je win				; win condition found, exit loop
 sub rcx, 0x2			; subtract 2 to traverse from tail to head
 cmp r8b, byte [tttArray+rcx]	; if current placement = diagonal position
-je checkDiag2			; check next diagonal positon
+je checkDiag2			; restart: check next diagonal positon
 
 ; else no win conditions found
 
@@ -404,11 +404,10 @@ je checkDiag2			; check next diagonal positon
 ; ###############################################
 
 pop rcx		; restore round counter
-cmp rcx, 0x9	; if round counter = 9
-je draw		; exit; the board is full, the current game is a draw
-; else
-nextRound:	; loop: next round
-jmp roundStart	
+cmp rcx, 0x9	; if round counter = 9, the board is full
+je draw		; exit; the current game is a draw
+nextRound:	; else
+jmp roundStart	; start next round
 
 ; ### Output win or draw
 ; ###############################################
@@ -417,8 +416,8 @@ win:
 pop rcx		; restore round counter
 test rcx, 0x1	; test round counter
 jz p2win	; if even, player 2 wins
-
-; else player 1 wins
+		; else player 1 wins
+		
  print p1WinPrompt, endPromptSize	; output: "Player 1 wins!!!"
 jmp exit
 	
