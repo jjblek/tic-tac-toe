@@ -1,3 +1,3 @@
-# Tic-tac-toe - Intel x86-64 Assembly Language
+# Tic-tac-toe 
 
-Final Project for CS 12
+Intel x86-64 Assembly Language
